@@ -15,6 +15,7 @@ import { cn, formatRelative } from "@/lib/utils";
 import { useAppStore, useData } from "@/store/app-store";
 import { useLiveStore } from "@/store/live-store";
 import { BUSINESS_ICONS } from "./business-icons";
+import { LangSwitch } from "./lang-switch";
 
 function BusinessSwitcher() {
   const data = useData();
@@ -173,6 +174,7 @@ export function Topbar() {
       <div className="ml-auto flex items-center gap-0.5 sm:gap-1.5">
         <SearchButton />
         <AgentStatus />
+        <LangSwitch />
         <Notifications />
         <ThemeToggle />
       </div>

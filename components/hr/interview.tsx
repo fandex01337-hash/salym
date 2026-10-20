@@ -1,16 +1,22 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CalendarCheck, Play, RotateCcw, X } from "lucide-react";
+import { CalendarCheck, Play, RotateCcw, Square, X } from "lucide-react";
 import { toast } from "sonner";
+import { AvatarSegment, VoiceQuickControl } from "@/components/calls/voice-picker";
+import { useVoiceStore } from "@/store/voice-store";
+import { LangSegment } from "@/components/layout/lang-switch";
 import { AgentAvatar, AiBadge, TypingDots } from "@/components/shared/ai-bits";
+import { Hologram } from "@/components/shared/hologram";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, Progress } from "@/components/ui/misc";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { interviewReport, interviewScript, type InterviewTurn } from "@/lib/agent/hr";
 import { simulateTyping } from "@/lib/ai";
+import { useAgentVoices } from "@/lib/use-voices";
 import { cn, sleep } from "@/lib/utils";
+import { speak, stopSpeaking } from "@/lib/voice";
 import { useAppStore, useData } from "@/store/app-store";
 import { ScoreRing } from "./candidates";
 
@@ -22,15 +28,36 @@ export function Interview({ candidateId, onCandidateChange }: { candidateId: str
   const [turns, setTurns] = useState<InterviewTurn[]>([]);
   const [typing, setTyping] = useState<{ who: InterviewTurn["who"]; text: string } | null>(null);
   const [state, setState] = useState<"idle" | "running" | "done">("idle");
+  const [pulse, setPulse] = useState(0);
+  const voices = useAgentVoices();
+  const avatar = useVoiceStore((s) => s.avatar);
+  const voicesRef = useRef(voices);
+  voicesRef.current = voices;
   const runRef = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     runRef.current++;
+    stopSpeaking();
     setTurns([]);
     setTyping(null);
     setState("idle");
   }, [cand.id]);
+
+  useEffect(
+    () => () => {
+      runRef.current++;
+      stopSpeaking();
+    },
+    [],
+  );
+
+  const stop = () => {
+    runRef.current++;
+    stopSpeaking();
+    setTyping(null);
+    setState(turns.length ? "done" : "idle");
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -41,11 +68,27 @@ export function Interview({ candidateId, onCandidateChange }: { candidateId: str
     setTurns([]);
     setState("running");
     setStatus(cand.id, "interview");
-    for (const t of interviewScript(data, cand)) {
+    for (const t of interviewScript(data, cand, voicesRef.current.lang)) {
       if (runRef.current !== run) return;
       setTyping({ who: t.who, text: "" });
       await sleep(t.who === "ai" ? 400 : 900);
-      await simulateTyping(t.text, (s) => runRef.current === run && setTyping({ who: t.who, text: s }), { speed: t.who === "ai" ? 0.5 : 0.65 });
+      if (runRef.current !== run) return;
+      const v = voicesRef.current;
+      const words = t.text.split(/\s+/).filter(Boolean);
+      const show = (n: number) => {
+        if (runRef.current !== run) return;
+        setTyping({ who: t.who, text: words.slice(0, n).join(" ") });
+        if (t.who === "ai") setPulse((p) => p + 1);
+      };
+      if (v.enabled && (t.who === "ai" || v.voiceOthers)) {
+        await speak(t.text, t.who === "ai" ? v.agent : v.other(cand.name), show).done;
+      } else {
+        await simulateTyping(t.text, (s) => {
+          if (runRef.current !== run) return;
+          setTyping({ who: t.who, text: s });
+          if (t.who === "ai") setPulse((p) => p + 1);
+        }, { speed: t.who === "ai" ? 0.5 : 0.65 });
+      }
       if (runRef.current !== run) return;
       setTyping(null);
       setTurns((prev) => [...prev, t]);
@@ -85,9 +128,15 @@ export function Interview({ candidateId, onCandidateChange }: { candidateId: str
                   ))}
               </SelectContent>
             </Select>
-            <Button variant={state === "idle" ? "ai" : "outline"} onClick={start} disabled={state === "running"}>
-              {state === "done" ? <RotateCcw /> : <Play />} {state === "done" ? "Заново" : "Начать"}
-            </Button>
+            {state === "running" ? (
+              <Button variant="outline" onClick={stop}>
+                <Square className="!size-3.5" /> Стоп
+              </Button>
+            ) : (
+              <Button variant={state === "idle" ? "ai" : "outline"} onClick={start}>
+                {state === "done" ? <RotateCcw /> : <Play />} {state === "done" ? "Заново" : "Начать"}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-muted/20 p-4 scrollbar-thin">
@@ -114,6 +163,30 @@ export function Interview({ candidateId, onCandidateChange }: { candidateId: str
         </div>
       </Card>
 
+      <div className="space-y-4">
+      <Card className="overflow-hidden">
+        <div className="relative">
+          <Hologram speaking={typing?.who === "ai"} pulse={pulse} active={state === "running"} height={260} tone="violet" persona={avatar === "robot" ? "robot" : voices.preset.gender} className="rounded-none" />
+          <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
+            <span className={cn("h-1.5 w-1.5 rounded-full", state === "running" ? "animate-pulse bg-red-500" : "bg-white/50")} />
+            {state === "running" ? "Идёт интервью" : state === "done" ? "Интервью завершено" : "HR-интервьюер"}
+          </div>
+          <div className="absolute inset-x-0 bottom-3 text-center text-xs font-medium tracking-wide text-violet-100/90">
+            {typing?.who === "ai" ? "Агент задаёт вопрос" : typing?.who === "candidate" ? `Отвечает ${cand.name.split(" ")[0]}` : "Голограмма ИИ-агента"}
+          </div>
+        </div>
+        <div className="space-y-3 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-medium text-muted-foreground">Язык интервью</span>
+            <LangSegment />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-medium text-muted-foreground">Образ голограммы</span>
+            <AvatarSegment />
+          </div>
+          <VoiceQuickControl />
+        </div>
+      </Card>
       <Card className="h-fit">
         <CardHeader>
           <CardTitle>Отчёт для руководителя</CardTitle>
@@ -167,6 +240,7 @@ export function Interview({ candidateId, onCandidateChange }: { candidateId: str
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

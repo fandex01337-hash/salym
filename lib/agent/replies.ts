@@ -1,11 +1,13 @@
-import type { BusinessData } from "@/lib/data/types";
+﻿import type { BusinessData } from "@/lib/data/types";
 import { firstName } from "@/lib/data/names";
 import { formatMoney } from "@/lib/utils";
+import { genericReplyIn, type AgentLang } from "./i18n";
 
 /** Демо-ответ агента на произвольное сообщение клиента: ищем по FAQ и услугам */
-export function genericReply(data: BusinessData, clientText: string, clientName: string) {
+export function genericReply(data: BusinessData, clientText: string, clientName: string, lang: AgentLang = "ru") {
   const t = clientText.toLowerCase();
   const name = firstName(clientName);
+  if (lang !== "ru") return genericReplyIn(lang, name, clientText, data.knowledge);
 
   const svc = data.services.find((s) =>
     s.name

@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
-  ArrowRight, AtSign, Brain, Briefcase, CalendarClock, CalendarDays, CornerDownLeft, FileText, Kanban, LayoutDashboard,
+  ArrowRight, AtSign, Brain, Briefcase, CalendarClock, CalendarDays, CornerDownLeft, FileSpreadsheet, FileText, Kanban, LayoutDashboard,
   Lightbulb, Megaphone, MessagesSquare, Mic, Moon, PhoneCall, Play, Radio, RotateCcw, Search, Sparkles, Users, Wallet, WandSparkles, Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -78,6 +78,7 @@ export function CommandMenu() {
       { id: "n-mkt", group: "Перейти", label: "Умные акции", hint: "Маркетинг", icon: Lightbulb, run: go("/marketing?tab=promos") },
       { id: "n-gen", group: "Перейти", label: "Генератор контента", hint: "Маркетинг", icon: WandSparkles, keywords: "пост instagram сторис", run: go("/marketing?tab=generator") },
       { id: "n-plan", group: "Перейти", label: "Контент-план", hint: "Маркетинг", icon: CalendarDays, run: go("/marketing?tab=plan") },
+      { id: "n-reports", group: "Перейти", label: "Отчёты: Excel о заработке", icon: FileSpreadsheet, keywords: "отчёт эксель excel xlsx выгрузка заработок прибыль", run: go("/reports") },
       { id: "n-staff", group: "Перейти", label: "Сотрудники", icon: Users, run: go("/staff") },
       { id: "n-hr", group: "Перейти", label: "HR: кандидаты", icon: Briefcase, keywords: "найм резюме", run: go("/hr") },
       { id: "n-int", group: "Перейти", label: "ИИ-собеседование", hint: "HR", icon: Mic, run: go("/hr?tab=interview") },

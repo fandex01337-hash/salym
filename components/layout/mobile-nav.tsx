@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,7 +8,7 @@ import { AgentAvatar } from "@/components/shared/ai-bits";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useData } from "@/store/app-store";
-import { NAV_EXTRA, NAV_SETTINGS } from "./nav";
+import { NAV_EXTRA, NAV_REPORTS, NAV_SETTINGS } from "./nav";
 
 const TABS = [
   { href: "/", label: "Главная", icon: LayoutDashboard },
@@ -26,7 +26,7 @@ export function MobileNav() {
   const [more, setMore] = useState(false);
   const unread = data.conversations.filter((c) => c.unread > 0).length;
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
-  const moreActive = [...NAV_EXTRA, NAV_SETTINGS].some((i) => isActive(i.href));
+  const moreActive = [NAV_REPORTS, ...NAV_EXTRA, NAV_SETTINGS].some((i) => isActive(i.href));
   const last = data.activity[0];
 
   useEffect(() => setMore(false), [pathname]);
@@ -69,7 +69,7 @@ export function MobileNav() {
               </div>
             </Link>
             <div className="grid grid-cols-2 gap-2.5">
-              {[...NAV_EXTRA, NAV_SETTINGS].map((i) => (
+              {[NAV_REPORTS, ...NAV_EXTRA, NAV_SETTINGS].map((i) => (
                 <Link
                   key={i.href}
                   href={i.href}

@@ -1,5 +1,6 @@
 ﻿import type { BusinessData, Candidate } from "@/lib/data/types";
 import { firstName } from "@/lib/data/names";
+import { INTERVIEW, type AgentLang } from "./i18n";
 
 export interface InterviewTurn {
   who: "ai" | "candidate";
@@ -7,12 +8,30 @@ export interface InterviewTurn {
 }
 
 /** Сценарий ИИ-собеседования: вопросы агента и ответы кандидата (по уровню скоринга) */
-export function interviewScript(data: BusinessData, c: Candidate): InterviewTurn[] {
+export function interviewScript(data: BusinessData, c: Candidate, lang: AgentLang = "ru"): InterviewTurn[] {
   const strong = c.score >= 80;
   const mid = c.score >= 60 && c.score < 80;
   const name = firstName(c.name);
   const biz = data.name;
   const pick = (s: string, m: string, w: string) => (strong ? s : mid ? m : w);
+  const tier = (arr: [string, string, string]) => pick(arr[0], arr[1], arr[2]);
+
+  if (lang !== "ru") {
+    const t = INTERVIEW[lang];
+    return [
+      { who: "ai", text: t.hello(name, biz.replace(/^.*«|»$/g, ""), c.role) },
+      { who: "candidate", text: t.ready },
+      { who: "ai", text: t.q1 },
+      { who: "candidate", text: tier(t.a1) },
+      { who: "ai", text: t.q2 },
+      { who: "candidate", text: tier(t.a2) },
+      { who: "ai", text: t.q3 },
+      { who: "candidate", text: tier(t.a3) },
+      { who: "ai", text: t.q4 },
+      { who: "candidate", text: tier(t.a4(biz.replace(/^.*«|»$/g, ""))) },
+      { who: "ai", text: t.bye(name) },
+    ];
+  }
 
   return [
     { who: "ai", text: `Здравствуйте, ${name}! Я Салым, ИИ-ассистент «${biz}». Проведу короткое собеседование на позицию «${c.role}» — 4 вопроса, около 5 минут. Готовы?` },

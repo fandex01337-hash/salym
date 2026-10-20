@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Bot, ChevronLeft, Hand, Info, SendHorizontal, Sparkles } from "lucide-react";
@@ -14,6 +14,7 @@ import { agentReplyToLast } from "@/lib/simulation";
 import { cn, formatDate, formatTime, isSameDay } from "@/lib/utils";
 import { useAppStore, useData } from "@/store/app-store";
 import { useLiveStore } from "@/store/live-store";
+import { useVoiceStore } from "@/store/voice-store";
 import { ClientCard, TEMP_META } from "./client-card";
 
 function ModeToggle({ mode, onChange }: { mode: "auto" | "manual"; onChange: (m: "auto" | "manual") => void }) {
@@ -94,7 +95,7 @@ export function ChatWindow({ convId, onBack, showClientButton }: { convId: strin
   const suggest = async () => {
     const lastClient = [...conv.messages].reverse().find((m) => m.from === "client");
     setSuggesting(true);
-    await simulateTyping(genericReply(data, lastClient?.text ?? "", client.name), (t) => setInput(t), { speed: 0.5 });
+    await simulateTyping(genericReply(data, lastClient?.text ?? "", client.name, useVoiceStore.getState().lang), (t) => setInput(t), { speed: 0.5 });
     setSuggesting(false);
     inputRef.current?.focus();
   };

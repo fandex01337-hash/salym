@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { toast } from "sonner";
 import { clientChatPrompt } from "@/lib/agent/context";
+import { localized } from "@/lib/agent/i18n";
 import { genericReply } from "@/lib/agent/replies";
 import { streamText, type ChatMessage } from "@/lib/ai";
 import { channelName, pickNewClientName, randomPhone } from "@/lib/data/generator";
@@ -12,6 +13,7 @@ import type { Channel, Client, Conversation } from "@/lib/data/types";
 import { formatMoney, sleep, uid } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 import { useLiveStore } from "@/store/live-store";
+import { useVoiceStore } from "@/store/voice-store";
 
 const CHANNELS: Channel[] = ["instagram", "whatsapp", "telegram", "website", "2gis"];
 let lastScenario = -1;
@@ -32,7 +34,7 @@ export async function agentSay(convId: string, fallback: string) {
 
   const history: ChatMessage[] = conv.messages.map((m) => ({ role: m.from === "client" ? "user" : "assistant", content: m.text }));
   const text = await streamText({
-    system: clientChatPrompt(data, client?.name ?? "клиент", channelName(conv.channel)),
+    system: clientChatPrompt(data, client?.name ?? "клиент", channelName(conv.channel), useVoiceStore.getState().lang),
     messages: history,
     fallback,
     maxTokens: 300,
@@ -52,7 +54,7 @@ export async function agentReplyToLast(convId: string) {
   if (!last || last.from !== "client") return;
   const client = data.clients.find((c) => c.id === conv.clientId);
   await sleep(600);
-  await agentSay(convId, genericReply(data, last.text, client?.name ?? "клиент"));
+  await agentSay(convId, genericReply(data, last.text, client?.name ?? "клиент", useVoiceStore.getState().lang));
 }
 
 /** Главный инструмент демо: входящая заявка от случайного клиента, агент отвечает в реальном времени */
@@ -65,7 +67,9 @@ export function simulateIncoming(preferred?: Channel): string | null {
   let idx = Math.floor(Math.random() * p.incoming.length);
   if (idx === lastScenario) idx = (idx + 1) % p.incoming.length;
   lastScenario = idx;
-  const scenario = p.incoming[idx];
+  // Тексты клиента и агента — на выбранном языке общения
+  const tr = localized(useVoiceStore.getState().lang, data.type)?.incoming[idx];
+  const scenario = tr ? { ...p.incoming[idx], ...tr } : p.incoming[idx];
   const channel = preferred ?? CHANNELS[Math.floor(Math.random() * 3)];
   const name = pickNewClientName(data);
   const now = new Date().toISOString();

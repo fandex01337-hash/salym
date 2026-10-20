@@ -7,6 +7,7 @@ import { AiBadge } from "@/components/shared/ai-bits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { downloadExcelReport } from "@/lib/reports/excel";
 import { cn, formatDate, formatMoney, formatTime } from "@/lib/utils";
 import { useData } from "@/store/app-store";
 
@@ -15,6 +16,7 @@ export function TransactionsTable() {
   const [type, setType] = useState<"all" | "income" | "expense">("all");
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(25);
+  const [exporting, setExporting] = useState(false);
   const clients = new Map(data.clients.map((c) => [c.id, c.name]));
   const fresh = Date.now() - 15 * 60000;
 
@@ -41,8 +43,23 @@ export function TransactionsTable() {
               </button>
             ))}
           </div>
-          <Button size="sm" variant="outline" onClick={() => toast.success("Выгрузка подготовлена", { description: "Файл для 1С и бухгалтера сформирован (демо)" })}>
-            <Download /> Экспорт
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true);
+              try {
+                const res = await downloadExcelReport(data, "30d");
+                toast.success("Excel-отчёт скачан", { description: `${res.fileName} — все листы в разделе «Отчёты»` });
+              } catch {
+                toast.error("Не удалось сформировать Excel");
+              } finally {
+                setExporting(false);
+              }
+            }}
+          >
+            <Download /> Excel
           </Button>
         </div>
       </CardHeader>

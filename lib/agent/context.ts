@@ -1,7 +1,8 @@
-import { PROFILES } from "@/lib/data/profiles";
+﻿import { PROFILES } from "@/lib/data/profiles";
 import type { BusinessData } from "@/lib/data/types";
 import { dashboardKpis, employeeRevenue, profitDrivers, serviceSales, sleepingClients, weakService, weekdayRevenue } from "@/lib/analytics";
 import { formatMoney } from "@/lib/utils";
+import { LANG_PROMPT, type AgentLang } from "./i18n";
 
 const TONES = { friendly: "дружелюбный, тёплый, с умеренными эмодзи", formal: "вежливый и официальный, без эмодзи", casual: "простой и неформальный, на «ты»" };
 
@@ -48,8 +49,9 @@ export function agentPersona(data: BusinessData) {
 ${businessContext(data)}`;
 }
 
-export function clientChatPrompt(data: BusinessData, clientName: string, channel: string) {
+export function clientChatPrompt(data: BusinessData, clientName: string, channel: string, lang: AgentLang = "ru") {
   return `Ты — «Салым», ИИ-администратор «${data.name}». Ты переписываешься с клиентом ${clientName} в ${channel}.
+${LANG_PROMPT[lang]}
 Тон: ${TONES[data.knowledge.tone]}. Пиши коротко, 1–3 предложения, как живой администратор в мессенджере. Предлагай конкретное время и записывай клиента. Соблюдай правила бизнеса. Цены — только из списка.
 Сегодня ${new Date().toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}.
 
